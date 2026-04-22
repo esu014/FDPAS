@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FDPAS — Financial Data Pipeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #07090f;
+            --surface: #0d1117;
+            --surface2: #111820;
+            --border: rgba(255, 255, 255, 0.07);
+            --border-bright: rgba(99, 202, 183, 0.3);
+            --text: #e8edf3;
+            --muted: #5a6a7a;
+            --accent: #63cab7;
+            --accent2: #f0c060;
+            --accent3: #e05a6a;
+            --up: #4ade80;
+            --down: #f87171;
+            --neutral: #94a3b8;
+            --glow: rgba(99, 202, 183, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Syne', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(99, 202, 183, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 202, 183, 0.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Glow blob */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 500px;
+            background: radial-gradient(ellipse, rgba(99, 202, 183, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .shell {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px 80px;
+        }
+
+        /* ── Header ── */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 32px 0 48px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 56px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-mark {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border-bright);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.05em;
+        }
+
+        .logo-text {
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .logo-sub {
+            font-size: 0.72rem;
+            color: var(--muted);
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 2px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--muted);
+            transition: background 0.3s;
+        }
+
+        .status-dot.live {
+            background: var(--up);
+            box-shadow: 0 0 8px var(--up);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* ── Hero ── */
+        .hero {
+            margin-bottom: 64px;
+        }
+
+        .hero-kicker {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--accent);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.8rem, 6vw, 5rem);
+            font-weight: 800;
+            line-height: 1.0;
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 span {
+            color: var(--accent);
+        }
+
+        .hero-lead {
+            font-size: 1.05rem;
+            color: var(--muted);
+            max-width: 52ch;
+            line-height: 1.7;
+            font-weight: 400;
+        }
+
+        /* ── Price Hero Card ── */
+        .price-hero {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .price-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.6;
+        }
+
+        .price-hero-inner {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .price-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .price-value {
+            font-size: clamp(2.4rem, 5vw, 4rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .price-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 6px;
+        }
+
+        .price-change.up {
+            color: var(--up);
+            background: rgba(74, 222, 128, 0.08);
+        }
+
+        .price-change.down {
+            color: var(--down);
+            background: rgba(248, 113, 113, 0.08);
+        }
+
+        .price-change.neutral {
+            color: var(--neutral);
+            background: rgba(148, 163, 184, 0.08);
+        }
+
+        .ticker-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--accent);
+            background: rgba(99, 202, 183, 0.08);
+            border: 1px solid var(--border-bright);
+            padding: 6px 14px;
+            border-radius: 8px;
+            letter-spacing: 0.1em;
+        }
+
+        /* ── Indicators Grid ── */
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .indicator-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .indicator-card:hover {
+            border-color: rgba(99, 202, 183, 0.2);
+        }
+
+        .indicator-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .indicator-card:hover::after {
+            opacity: 0.4;
+        }
+
+        .ind-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .ind-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.55rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        .ind-value.null-val {
+            color: var(--muted);
+            font-size: 1rem;
+        }
+
+        .ind-context {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .ind-badge {
+            display: inline-block;
+            margin-top: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .badge-warn {
+            background: rgba(240, 192, 96, 0.12);
+            color: var(--accent2);
+        }
+
+        .badge-danger {
+            background: rgba(224, 90, 106, 0.12);
+            color: var(--accent3);
+        }
+
+        .badge-ok {
+            background: rgba(74, 222, 128, 0.1);
+            color: var(--up);
+        }
+
+        /* ── RSI Bar ── */
+        .rsi-bar-wrap {
+            margin-top: 14px;
+        }
+
+        .rsi-track {
+            height: 4px;
+            background: var(--surface2);
+            border-radius: 999px;
+            position: relative;
+            overflow: visible;
+        }
+
+        .rsi-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(90deg, var(--up), var(--accent2), var(--down));
+        }
+
+        .rsi-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+            transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ── Meta Row ── */
+        .meta-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .meta-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .meta-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(99, 202, 183, 0.08);
+            border: 1px solid var(--border-bright);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .meta-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .meta-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* ── Alerts ── */
+        .alerts-section {
+            margin-bottom: 48px;
+        }
+
+        .section-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--muted);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 16px 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .alert-item.warn {
+            border-left: 2px solid var(--accent2);
+        }
+
+        .alert-item.danger {
+            border-left: 2px solid var(--accent3);
+        }
+
+        .alert-item.info {
+            border-left: 2px solid var(--accent);
+        }
+
+        .no-alerts {
+            padding: 20px;
+            text-align: center;
+            color: var(--muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        /* ── Footer ── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding-top: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-left {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .footer-left a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--border-bright);
+            border-radius: 10px;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+            letter-spacing: 0.05em;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(99, 202, 183, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ── Loading / Error ── */
+        .loading-overlay {
+            text-align: center;
+            padding: 80px 0;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .error-box {
+            background: rgba(224, 90, 106, 0.06);
+            border: 1px solid rgba(224, 90, 106, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: var(--accent3);
+        }
+
+        /* ── Fade in ── */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(12px);
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .fade-in:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .fade-in:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .fade-in:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        @media (max-width: 720px) {
+            .price-hero-inner {
+                grid-template-columns: 1fr;
+            }
+
+            .indicators-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .meta-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .indicators-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="shell">
+
+        <header>
+            <div class="logo">
+                <div class="logo-mark">FD</div>
+                <div>
+                    <div class="logo-text">FDPAS</div>
+                    <div class="logo-sub">financial data pipeline</div>
+                </div>
+            </div>
+            <div class="status-pill">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">connecting...</span>
+            </div>
+        </header>
+
+        <section class="hero">
+            <p class="hero-kicker">// live market indicators</p>
+            <h1>Gold Futures<br /><span>XAU · GC=F</span></h1>
+            <p class="hero-lead">Pipeline de datos financieros en tiempo real. Indicadores técnicos calculados sobre
+                histórico local persistido en SQLite.</p>
+        </section>
+
+        <div id="content">
+            <div class="loading-overlay">
+                <div class="spinner"></div>
+                <p class="loading-text">fetching indicators...</p>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-left">
+                built by <a href="https://github.com/esu014" target="_blank">@esu014</a> ·
+                <a href="https://github.com/esu014/FDPAS" target="_blank">source</a> ·
+                powered by FastAPI + SQLite
+            </div>
+            <button class="refresh-btn" onclick="loadData()">
+                ↻ refresh
+            </button>
+        </footer>
+
+    </div>
+
+    <script>
+        // ── Config ──────────────────────────────────────────────────────────────────
+        // Cambia esta URL por la de Render cuando despliegues la API
+        // const API_URL = 'http://localhost:8000/indicators';
+        const API_URL = 'https://fdpas-api-production.up.railway.app/indicators';
+
+        // ── Helpers ─────────────────────────────────────────────────────────────────
+        const fmt = (n, d = 2) => n != null ? Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) : null;
+        const fmtMono = (n, d = 2) => n != null ? fmt(n, d) : '<span style="color:var(--muted);font-size:0.9rem">N/A</span>';
+
+        function getPctClass(v) {
+            if (v == null) return 'neutral';
+            return v > 0 ? 'up' : v < 0 ? 'down' : 'neutral';
+        }
+
+        function getRsiLabel(rsi) {
+            if (rsi == null) return '';
+            if (rsi > 70) return '<span class="ind-badge badge-danger">OVERBOUGHT</span>';
+            if (rsi < 30) return '<span class="ind-badge badge-ok">OVERSOLD</span>';
+            return '<span class="ind-badge badge-warn">NEUTRAL</span>';
+        }
+
+        function evaluateAlerts(d) {
+            const alerts = [];
+            if (d.price != null && d.sma_short != null && d.price < d.sma_short)
+                alerts.push({ type: 'warn', text: `⚠️ Precio (${fmt(d.price, 2)}) por debajo de SMA50 (${fmt(d.sma_short, 2)}). Señal bajista.` });
+            if (d.rsi != null && d.rsi > 70)
+                alerts.push({ type: 'danger', text: `🔴 RSI en sobrecompra: ${fmt(d.rsi, 2)} > 70.` });
+            if (d.rsi != null && d.rsi < 30)
+                alerts.push({ type: 'info', text: `🟢 RSI en sobreventa: ${fmt(d.rsi, 2)} < 30.` });
+            if (d.pct_change != null && d.pct_change < -3)
+                alerts.push({ type: 'danger', text: `🚨 Caída del ${fmt(Math.abs(d.pct_change), 2)}% en la sesión.` });
+            return alerts;
+        }
+
+        // ── Render ───────────────────────────────────────────────────────────────────
+        function render(d) {
+            const pctClass = getPctClass(d.pct_change);
+            const pctSign = d.pct_change > 0 ? '+' : '';
+            const alerts = evaluateAlerts(d);
+            const now = new Date().toLocaleTimeString('es-ES');
+
+            document.getElementById('content').innerHTML = `
+      <div class="price-hero fade-in">
+        <div class="price-hero-inner">
+          <div>
+            <div class="price-label">precio actual · última sesión</div>
+            <div class="price-value">$${fmt(d.price, 2)}</div>
+            ${d.pct_change != null ? `
+              <div class="price-change ${pctClass}">
+                ${pctSign}${fmt(d.pct_change, 4)}%
+                <span style="font-weight:400;opacity:0.7">vs sesión anterior</span>
+              </div>` : ''}
+          </div>
+          <div class="ticker-badge">${d.ticker}</div>
+        </div>
+      </div>
+
+      <div class="indicators-grid">
+        <div class="indicator-card fade-in">
+          <div class="ind-label">SMA 50</div>
+          <div class="ind-value ${d.sma_short == null ? 'null-val' : ''}">${fmtMono(d.sma_short, 2)}</div>
+          ${d.sma_short != null && d.price != null ? `
+            <div class="ind-context" style="color:${d.price < d.sma_short ? 'var(--down)' : 'var(--up)'}">
+              precio ${d.price < d.sma_short ? '↓ bajo' : '↑ sobre'} SMA50
+            </div>` : ''}
+        </div>
+
+        <div class="indicator-card fade-in">
+          <div class="ind-label">SMA 200</div>
+          <div class="ind-value ${d.sma_long == null ? 'null-val' : ''}">${fmtMono(d.sma_long, 2)}</div>
+          ${d.sma_long == null ? '<div class="ind-context">histórico insuficiente</div>' : ''}
+        </div>
+
+        <div class="indicator-card fade-in">
+          <div class="ind-label">RSI 14</div>
+          <div class="ind-value">${d.rsi != null ? fmt(d.rsi, 2) : '<span class="null-val">N/A</span>'}</div>
+          ${getRsiLabel(d.rsi)}
+          ${d.rsi != null ? `
+            <div class="rsi-bar-wrap">
+              <div class="rsi-track">
+                <div class="rsi-fill" style="width:${d.rsi}%"></div>
+                <div class="rsi-thumb" style="left:${d.rsi}%"></div>
+              </div>
+            </div>` : ''}
+        </div>
+      </div>
+
+      <div class="meta-row fade-in">
+        <div class="meta-card">
+          <div class="meta-icon">🗄️</div>
+          <div>
+            <div class="meta-label">registros en BD</div>
+            <div class="meta-val">${d.records_in_db.toLocaleString()} sesiones</div>
+          </div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-icon">🕐</div>
+          <div>
+            <div class="meta-label">última actualización</div>
+            <div class="meta-val">${now}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alerts-section fade-in">
+        <div class="section-title">// alertas activas</div>
+        ${alerts.length === 0
+                    ? '<div class="no-alerts">✓ sin alertas en este ciclo</div>'
+                    : alerts.map(a => `<div class="alert-item ${a.type}">${a.text}</div>`).join('')
+                }
+      </div>
+    `;
+        }
+
+        // ── Fetch ────────────────────────────────────────────────────────────────────
+        async function loadData() {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+
+            document.getElementById('content').innerHTML = `
+      <div class="loading-overlay">
+        <div class="spinner"></div>
+        <p class="loading-text">fetching indicators...</p>
+      </div>`;
+
+            dot.className = 'status-dot';
+            statusText.textContent = 'connecting...';
+
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                dot.className = 'status-dot live';
+                statusText.textContent = 'live';
+
+                render(data);
+            } catch (err) {
+                dot.className = 'status-dot';
+                statusText.textContent = 'offline';
+
+                document.getElementById('content').innerHTML = `
+        <div class="error-box">
+          ✗ No se pudo conectar con la API.<br/>
+          <span style="opacity:0.6;font-size:0.75rem;margin-top:8px;display:block">
+            Asegúrate de que la API está corriendo: uvicorn api:app --reload<br/>
+            URL: ${API_URL}
+          </span>
+        </div>`;
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+
+</html>
